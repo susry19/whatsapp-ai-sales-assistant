@@ -1,0 +1,204 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  name           String?
+  passwordHash   String
+  role           Role         @default(VIEWER)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+model Organization {
+  id             String         @id @default(uuid())
+  name           String
+  users          User[]
+  products       Product[]
+  conversations  Conversation[]
+  customers      Customer[]
+  orders         Order[]
+  settings       Setting?
+  subscription   Subscription?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Subscription {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  plan           PlanType     @default(STARTER)
+  status         SubStatus    @default(ACTIVE)
+  startDate      DateTime     @default(now())
+  endDate        DateTime?
+}
+
+enum PlanType {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubStatus {
+  ACTIVE
+  TRIAL
+  CANCELLED
+}
+
+model Product {
+  id                   String             @id @default(uuid())
+  organizationId       String
+  organization         Organization       @relation(fields: [organizationId], references: [id])
+  urun_adi             String
+  kisa_aciklama        String
+  detayli_aciklama     String
+  resim_url            String?
+  fiyat                Float?
+  stok                 Int?
+  kategori             String?
+  marka                String?
+  tags                 String?
+  faq_sorulari         String?
+  kurulum_bilgisi      String?
+  sikayetler_cozumler  String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  
+  embeddings           ProductEmbedding[]
+  orderItems           OrderItem[]
+}
+
+model ProductEmbedding {
+  id             String                 @id @default(uuid())
+  productId      String
+  product        Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
+  content        String                 // The text content embedded
+  embedding      Unsupported("vector(1536)")
+}
+
+model Customer {
+  id             String         @id @default(uuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  phone          String         // WhatsApp number
+  name           String?
+  address        String?
+  conversations  Conversation[]
+  orders         Order[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  
+  @@unique([organizationId, phone])
+}
+
+model Conversation {
+  id             String         @id @default(uuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  customerId     String
+  customer       Customer       @relation(fields: [customerId], references: [id])
+  platform       Platform       @default(WHATSAPP)
+  status         ConvStatus     @default(ACTIVE)
+  humanTakeover  Boolean        @default(false)
+  messages       Message[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+enum Platform {
+  WHATSAPP
+  INSTAGRAM
+}
+
+enum ConvStatus {
+  ACTIVE
+  RESOLVED
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         SenderType
+  content        String
+  createdAt      DateTime     @default(now())
+}
+
+enum SenderType {
+  USER
+  AI
+  HUMAN_AGENT
+}
+
+model Order {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  customerId     String
+  customer       Customer     @relation(fields: [customerId], references: [id])
+  status         OrderStatus  @default(PENDING)
+  totalAmount    Float
+  deliveryAddress String?
+  items          OrderItem[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+}
+
+model Setting {
+  id                   String       @id @default(uuid())
+  organizationId       String       @unique
+  organization         Organization @relation(fields: [organizationId], references: [id])
+  openaiApiKey         String?
+  metaAccessToken      String?
+  whatsappPhoneId      String?
+  instagramToken       String?
+  systemPrompt         String?      @db.Text
+}
+
+model AnalyticsDaily {
+  id             String       @id @default(uuid())
+  organizationId String
+  date           DateTime     @db.Date
+  totalMessages  Int          @default(0)
+  aiMessages     Int          @default(0)
+  totalOrders    Int          @default(0)
+  revenue        Float        @default(0)
+  
+  @@unique([organizationId, date])
+}
