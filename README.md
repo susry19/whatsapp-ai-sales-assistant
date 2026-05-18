@@ -23,14 +23,12 @@ To get this project running on your local machine or in GitHub Codespaces, follo
 6. Replace `[YOUR-PASSWORD]` with the database password you created in step 1.4. (Make sure you also add `?pgbouncer=true&connection_limit=1` if recommended, or use the direct connection string, typically ending in `:5432/postgres`).
 
 ### 3. Setup Your Environment Variables
-1. In your project directory, copy `.env.example` to create a `.env` file:
-   ```bash
-   cp .env.example .env
-   ```
-2. Open the `.env` file and replace `"your_supabase_connection_string"` with the string you copied in step 2.
+1. The `.env` file has already been **pre-configured** in your workspace with your exact Supabase connection string:
+   `DATABASE_URL="postgresql://postgres:%26y9Bv2%21%24bn%25xir%2C@db.cptyopfiosqddsbhibno.supabase.co:5432/postgres"`
+2. If you need to change it, you can copy `.env.example` to `.env` and fill in a new value.
 
 ### 4. Install Dependencies
-Run the following command to install all project dependencies. The `--legacy-peer-deps` flag is required because we are using Next.js 15 RC and React 19 RC which might have strict peer dependency requirements.
+Run the following command to install all project dependencies. The dependencies have been updated to the stable Next.js 14 and React 18 stacks, ensuring a clean installation:
 ```bash
 npm install --legacy-peer-deps
 ```
